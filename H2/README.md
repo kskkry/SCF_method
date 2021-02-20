@@ -10,8 +10,7 @@ SCF法により水素分子の電荷密度の計算を行った。<br>
 2. https://qiita.com/swakamoto/items/5694fdb099cb96b050e8
 <br>
 
-参考までに実行方法
-<div>
+参考までに実行方法(書きたかっただけ)
+<br>
 
-`python h2_hartree_fock.py`
-</div>
+`$ python h2_hartree_fock.py`
