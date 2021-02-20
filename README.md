@@ -1,7 +1,7 @@
 solver.pyでは計算に必要な行列を入力すればHartree-Fockの手続きに従って
 <br>電子密度行列を算出する過程を記述することを目的にしている<br>
 
-SCF.ipynbではザボの教科書に記載された積分値を用いてHHとHF+での計算結果を加えた
+[SCF.ipynb](https://github.com/kskkry/SCF_method/blob/main/SCF.ipynb)ではザボの教科書に記載された積分値を用いてHHとHF+での計算結果を加えた
 
 
 
