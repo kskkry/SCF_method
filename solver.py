@@ -28,30 +28,55 @@ class SCFSolver:
         return: regular matrix
         '''
         X = np.array(self.S.shape)
+        
+        #固有値の配列、固有ベクトルをそれぞれ返す
+        e, e_v = np.linalg.eigh(self.S)
         if mode=='canonical':
-            pass
+            #正準直交化
+            for i in range(self.num_AO):
+                for j in range(self.num_AO):
+                    X[i,j] = e_v[i,j] / np.sqrt(e[j])
         elif mode=='symmetric':
-            pass
+            #対称直交化
+            regular_matrix = np.zeros(self.S.shape)
+            for i in range(len(e)):
+                regular_matrix[i,i] = 1/np.sqrt(e[i])
+            X = e_v.dot(regular_matrix.dot(np.conjugate(e_v)))
         return X
     
-    def update_P_matrix(self, P, C_dash):
+    def update_P_matrix(self, P, C):
         '''
         parameter P: density matrix
         parameter C_dash: X*C(C: regular matrix computed from Fock matrix)
         return: updated density matrix
         '''
-        new_P = np.array(P.shape)
+        new_P = np.zeros(P.shape)
         ### 占有軌道の数
         num_occupied_orbital = self.num_elec // 2 
         for i in range(self.num_AO):
             for j in range(self.num_AO):
                 tmp = 0
-                for k in range(self.num_occupied_orbital):
-                    tmp += C_dash[i,k]*C_dash[j,k]
+                for k in range(num_occupied_orbital):
+                    tmp += C[i,k]*C[j,k]
                 new_P = tmp
         return new_P
 
-    def judge_scf_end(self, new_P, P):
+    def compute_term_2_elec_integral(self, P: np.array):
+        '''
+        2電子積分(self.two_elec_integral)がエルミート行列であることを確認
+        '''
+        new_G = np.zeros((2,2))
+
+        for i in range(self.num_AO):
+            for j in range(self.num_AO):
+                for k in range(self.num_AO):
+                    for l in range(self.num_AO):
+                        J = self.two_elec_integral[i][j][k][l]
+                        K = 0.5 * self.two_elec_integral[i][l][k][j]
+                        new_G[i,j] += P[k,l] * (J-K)
+        return new_G
+
+    def judge_scf_end(self, new_P: np.array, P: np.array):
         '''
         parameter P: density matrix
         return: T/F (if True: Finish SCF loops)
@@ -64,5 +89,26 @@ class SCFSolver:
         return do_finish
 
     def scf(self):
-        pass
+        X = self.compute_transformation_matrix()
+        X_adj = np.matrix.getH(X) #共役転置行列を得る
+        P = np.zeros(self.S.shape)
+        MAX_ITER = 100
+
+        for n_iter in range(MAX_ITER):
+            print('-'*50)
+            print(f"ITERATION={n_iter+1}/{MAX_ITER}")
+            G = self.compute_term_2_elec_integral(P)
+            Fock = self.Hcore + G
+            Fock_dash = X_adj.dot(Fock.dot(X))
+            C_dash, eigen_val = np.linalg.eigh(Fock_dash)
+            C = X.dot(C_dash)
+            new_P = self.update_P_matrix(P, C)
+            do_finish = self.judge_scf_end(new_P, P)
+            if do_finish:
+                print('P')
+                print(new_P)
+                print('-'*50)
+                break
+            P = new_P
+            print('-'*50)
 
